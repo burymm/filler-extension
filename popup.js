@@ -26,20 +26,24 @@ async function emulateUserKeyPress(response) {
         return null;
     };
 
+    let nextActionHandler = (index) => {
+        const _nextAction = nextAction(index);
+        if (_nextAction) {
+            setTimeout(() => {
+                actionHandler(_nextAction, index + 1);
+            }, _nextAction.timeShift);
+        }
+    }
+
     let actionHandler = (action, index) => {
         const element = document.querySelector(action.element);
         if (action.type === 'keydown') {
             chrome.runtime.sendMessage({type: 'sendKey', action}, () => {
-                if (nextAction(index)) {
-                    setTimeout(() => {
-                        actionHandler(nextAction(index), index + 1);
-                    }, 200);
-                }
+                nextActionHandler(index);
             });
         } else
         if (action.type === 'click') {
             if (element) {
-                const rect = element.getBoundingClientRect();
                 const offset = getOffset(element);
                 const newAction = {
                     ...action,
@@ -50,25 +54,13 @@ async function emulateUserKeyPress(response) {
                     }
                 };
                 chrome.runtime.sendMessage({type: 'sendKey', action: newAction}, () => {
-                    if (nextAction(index)) {
-                        setTimeout(() => {
-                            actionHandler(nextAction(index), index + 1);
-                        }, 200);
-                    }
+                    nextActionHandler(index);
                 });
             } else {
-                if (nextAction(index)) {
-                    setTimeout(() => {
-                        actionHandler(nextAction(index), index + 1);
-                    }, 1000);
-                }
+                nextActionHandler(index);
             }
         } else {
-            if (nextAction(index)) {
-                setTimeout(() => {
-                    actionHandler(nextAction(index), index + 1);
-                }, 1000);
-            }
+            nextActionHandler(index);
         }
     }
     actionHandler(actions[0], 0);
@@ -83,15 +75,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const replayButton = document.querySelector('#emulateKeyButton');
     replayButton.addEventListener('click', async () => {
-        let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        // const localLog = await chrome.storage.local.get(['log']);
+        // console.log(JSON.parse(localLog.log));
+
+        let [tab] = await chrome.tabs.query({active: true, currentWindow: true});
         chrome.scripting.executeScript({
             target: {tabId: tab.id},
             function: emulateUserKeyPress,
         });
     });
-
-    chrome.runtime.sendMessage({ isRecording });
-
+    chrome.runtime.sendMessage({isRecording});
 
 
     const recordButton = document.querySelector('#recordButton');
@@ -100,13 +93,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     recordButton.innerHTML = isRecording ? 'Stop Recordinin' : 'Start Recording';
     recordButton.addEventListener('click', async () => {
         isRecording = !isRecording;
-        chrome.runtime.sendMessage({ isRecording });
+        chrome.runtime.sendMessage({isRecording});
         chrome.storage.local.set({['isRecording']: isRecording});
         recordButton.innerHTML = isRecording ? 'Stop Recordinin' : 'Start Recording';
 
         if (isRecording) {
             log = [];
             chrome.storage.local.set({['log']: JSON.stringify(log)});
+            chrome.storage.local.set({['startTime']: Date.now()});
+
         } else {
             if (autoSaveInput.checked) {
                 // chrome.storage.local.set({['log']: JSON.stringify(log)});

@@ -1,5 +1,16 @@
+const getDifference = (startTime) => {
+    const now = Date.now();
+    return now - startTime;
+}
+
 document.addEventListener('click', async (event) => {
     const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
+    const startTimeStorage = await chrome.storage.local.get(['startTime']);
+    let startTime;
+    if (startTimeStorage) {
+        startTime = new Date(startTimeStorage.startTime);
+    }
+
     if (!isRecordingStorage.isRecording) {
         return;
     }
@@ -29,12 +40,19 @@ document.addEventListener('click', async (event) => {
         type: 'click',
         element: generateQuerySelector(event.target),
         value: event.button,
+        timeShift: getDifference(startTime),
     };
     addToLogStorage(action);
+    chrome.storage.local.set({['startTime']: Date.now()});
 });
 
 document.addEventListener('keydown', async (event) => {
     const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
+    const startTimeStorage = await chrome.storage.local.get(['startTime']);
+    let startTime;
+    if (startTimeStorage) {
+        startTime = new Date(startTimeStorage.startTime);
+    }
     if (!isRecordingStorage.isRecording) {
         return;
     }
@@ -64,11 +82,13 @@ document.addEventListener('keydown', async (event) => {
     const action = {
         type: 'keydown',
         element: generateQuerySelector(event.target),
+        timeShift: getDifference(startTime),
         value: {
             code: event.code,
             key: event.key
         },
     };
     addToLogStorage(action);
+    chrome.storage.local.set({['startTime']: Date.now()});
 });
 
