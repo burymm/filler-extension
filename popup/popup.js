@@ -1,5 +1,3 @@
-console.log('script loaded');
-
 async function emulateUserKeyPress(response) {
     function getOffset(element) {
         const rect = element.getBoundingClientRect();

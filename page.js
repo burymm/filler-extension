@@ -3,17 +3,16 @@ const getDifference = (startTime) => {
     return now - startTime;
 }
 
-document.addEventListener('click', async (event) => {
-    const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
-    const startTimeStorage = await chrome.storage.local.get(['startTime']);
-    let startTime;
-    if (startTimeStorage) {
-        startTime = new Date(startTimeStorage.startTime);
-    }
 
-    if (!isRecordingStorage.isRecording) {
-        return;
-    }
+const addToLogStorage = async (action) => {
+    const localLog = await chrome.storage.local.get(['log']);
+    const log = JSON.parse(localLog.log);
+    log.push(action)
+    chrome.storage.local.set({['log']: JSON.stringify(log)});
+    chrome.storage.local.set({['startTime']: Date.now()});
+};
+
+document.addEventListener('click', async (event) => {
     const generateQuerySelector = function (el) {
         if (el.tagName.toLowerCase() == "html")
             return "HTML";
@@ -29,12 +28,16 @@ document.addEventListener('click', async (event) => {
         return el.parentNode ? generateQuerySelector(el.parentNode) + " > " + str : str;
     }
 
-    const addToLogStorage = async (action) => {
-        const localLog = await chrome.storage.local.get(['log']);
-        const log = JSON.parse(localLog.log);
-        log.push(action)
-        chrome.storage.local.set({['log']: JSON.stringify(log)});
-    };
+
+    const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
+    const startTimeStorage = await chrome.storage.local.get(['startTime']);
+    let startTime;
+    if (startTimeStorage) {
+        startTime = new Date(startTimeStorage.startTime);
+    }
+    if (!isRecordingStorage.isRecording) {
+        return;
+    }
 
     const action = {
         type: 'click',
@@ -43,27 +46,9 @@ document.addEventListener('click', async (event) => {
         timeShift: getDifference(startTime),
     };
     addToLogStorage(action);
-    chrome.storage.local.set({['startTime']: Date.now()});
 });
 
 document.addEventListener('keydown', async (event) => {
-    const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
-    const startTimeStorage = await chrome.storage.local.get(['startTime']);
-    let startTime;
-    if (startTimeStorage) {
-        startTime = new Date(startTimeStorage.startTime);
-    }
-    if (!isRecordingStorage.isRecording) {
-        return;
-    }
-
-    const addToLogStorage = async (action) => {
-        const localLog = await chrome.storage.local.get(['log']);
-        const log = JSON.parse(localLog.log);
-        log.push(action)
-        chrome.storage.local.set({['log']: JSON.stringify(log)});
-    };
-
     const generateQuerySelector = function (el) {
         if (el.tagName.toLowerCase() == "html")
             return "HTML";
@@ -77,6 +62,16 @@ document.addEventListener('keydown', async (event) => {
         }
 
         return el.parentNode ? generateQuerySelector(el.parentNode) + " > " + str : str;
+    }
+
+    const isRecordingStorage = await chrome.storage.local.get(['isRecording']);
+    const startTimeStorage = await chrome.storage.local.get(['startTime']);
+    let startTime;
+    if (startTimeStorage) {
+        startTime = new Date(startTimeStorage.startTime);
+    }
+    if (!isRecordingStorage.isRecording) {
+        return;
     }
 
     const action = {
@@ -89,6 +84,5 @@ document.addEventListener('keydown', async (event) => {
         },
     };
     addToLogStorage(action);
-    chrome.storage.local.set({['startTime']: Date.now()});
 });
 
